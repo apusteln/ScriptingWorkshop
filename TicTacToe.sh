@@ -2,14 +2,11 @@
 
 GRID=("T" "I" "C" "T" "A" "K" "T" "O" "E")
 STRING=""
-PLAYER_ROW=""
-PLAYER_COL=""
+TEMP_ROW=""
+TEMP_COL=""
 MULTIPLAYER=0
-COMPUTER_ROW=""
-COMPUTER_COL=""
 ROLL=0
 WINNER=""
-REPEATS=0
 
 function draw_grid {
 	#clear
@@ -64,11 +61,11 @@ function is_grid_full {
 }
 
 function ask_for_input {
-	PLAYER_ROW=" "
-	PLAYER_COL=" "
+	TEMP_ROW=" "
+	TEMP_COL=" "
 
 	echo "Please enter row and column numbers [1-3]: "
-	while [[ "$PLAYER_ROW" == " " || "$PLAYER_COL" == " " ]]
+	while [[ "$TEMP_ROW" == " " || "$TEMP_COL" == " " ]]
 	do
 		read -ra INPUT
 		if [ ${#INPUT[@]} -lt 2 ]
@@ -83,8 +80,14 @@ function ask_for_input {
 			continue
 		fi
 		
-		PLAYER_ROW=$(expr ${INPUT[0]} - 1)
-		PLAYER_COL=$(expr ${INPUT[1]} - 1)
+		if [[ $(check_if_empty ${INPUT[0]}-1 ${INPUT[1]}-1) -eq 0 ]]
+		then
+			echo "Position is not empty, chose another position!"
+			continue
+		fi
+		
+		TEMP_ROW=$(expr ${INPUT[0]} - 1)
+		TEMP_COL=$(expr ${INPUT[1]} - 1)
 	done
 }
 
@@ -94,8 +97,8 @@ function roll_computer_move {
 	do
 		ROLL=$(expr $RANDOM % 9)
 	done
-	COMPUTER_ROW=$(expr $ROLL / 3)
-	COMPUTER_COL=$(expr $ROLL % 3)
+	TEMP_ROW=$(expr $ROLL / 3)
+	TEMP_COL=$(expr $ROLL % 3)
 }
 
 function has_player_won {
@@ -103,13 +106,13 @@ function has_player_won {
 	
 	for i in {0..2}
 	do
-		# Rows
+		# Columns
 		if [[ ${GRID[0+$i]} = "$player" &&  ${GRID[3+$i]} = "$player" && ${GRID[6+$i]} = "$player" ]]
 		then
 			echo 1
 			return
 		fi
-		# Columns
+		# Rows
 		if [[ ${GRID[3*$i]} = "$player" &&  ${GRID[3*$i+1]} = "$player" && ${GRID[3*$i+2]} = "$player" ]]
 		then
 			echo 1
@@ -131,11 +134,7 @@ function has_player_won {
 }
 
 function has_game_ended {
-	if [[ $(is_grid_full) -eq 1 ]]
-	then
-		echo D
-		return
-	elif [[ $(has_player_won X) -eq 1 ]]
+	if [[ $(has_player_won X) -eq 1 ]]
 	then
 		echo X
 		return
@@ -151,6 +150,13 @@ function has_game_ended {
 			return
 		fi
 	fi
+	
+	if [[ $(is_grid_full) -eq 1 ]]
+	then
+		echo D
+		return
+	fi
+	
 	echo N
 }
 
@@ -177,9 +183,9 @@ then
 	if [[ "${#INPUT}" -gt 3 ]]
 	then
 		echo "I'll interpret this as \"Yes\""
-		sleep 1
 	fi
 	echo "Player two will play as \"O\""
+	sleep 1
 else
 	MULTIPLAYER=0
 	if [[ "${#INPUT}" -gt 3 ]]
@@ -196,12 +202,7 @@ while true
 do
 	echo "Player X's turn"
 	ask_for_input
-	while [[ $(check_if_empty $PLAYER_ROW $PLAYER_COL) -eq 0 ]]
-	do
-		echo "Position is not empty, chose another position!"
-		ask_for_input
-	done
-	update_grid $PLAYER_ROW $PLAYER_COL "X"
+	update_grid $TEMP_ROW $TEMP_COL "X"
 	
 	draw_grid
 	sleep 1
@@ -215,16 +216,11 @@ do
 	then
 		echo "Player O's turn"
 		ask_for_input
-		while [[ $(check_if_empty $PLAYER_ROW $PLAYER_COL) -eq 0 ]]
-		do
-			echo "Position is not empty, chose another position!"
-			ask_for_input
-		done
-		update_grid $PLAYER_ROW $PLAYER_COL "O"
+		update_grid $TEMP_ROW $TEMP_COL "O"
 
 	else
 		roll_computer_move
-		update_grid $COMPUTER_ROW $COMPUTER_COL "O"
+		update_grid $TEMP_ROW $TEMP_COL "O"
 	fi
 	
 	draw_grid
